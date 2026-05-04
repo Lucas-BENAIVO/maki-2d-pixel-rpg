@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "zones": [
+    {
+      "id": "zone1_masoala",
+      "map": "masoala_map",
+      "title": "Village de Masoala",
+      "goal": "Tutoriel + premiere Voan'Ala"
+    },
+    {
+      "id": "zone2_tavy",
+      "map": "tavy_map",
+      "title": "Lisiere brulee du Tavy",
+      "goal": "Choix de Dada Koto"
+    },
+    {
+      "id": "zone3_vohemar",
+      "map": "vohemar_map",
+      "title": "Mines clandestines de Vohemar",
+      "goal": "Purifier la riviere"
+    },
+    {
+      "id": "zone4_ranomafana",
+      "map": "ranomafana_map",
+      "title": "Corridor de Ranomafana",
+      "goal": "Planter 200 arbres"
+    },
+    {
+      "id": "zone5_sanctuary",
+      "map": "sanctuary_map",
+      "title": "Sanctuaire secret du pere",
+      "goal": "Grand debat final"
+    }
+  ]
+}

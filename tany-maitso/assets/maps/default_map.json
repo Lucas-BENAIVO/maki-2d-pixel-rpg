@@ -1,6 +1,6 @@
 {
   "name": "default_map",
-  "tileset": "assets/rooms/room1.png",
+  "tileset": "/rooms/room1.png",
   "tileSize": 16,
   "mapWidth": 50,
   "mapHeight": 50,
