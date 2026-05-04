@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "quests": [
+    {
+      "id": "q1_first_seed",
+      "title": "La Première Graine",
+      "zone": "masoala",
+      "type": "main",
+      "rewardPower": "forest_listen",
+      "enabled": true
+    },
+    {
+      "id": "q2_dada_koto",
+      "title": "Le Choix de Dada Koto",
+      "zone": "tavy_edge",
+      "type": "main",
+      "enabled": true
+    },
+    {
+      "id": "q3_river",
+      "title": "La Rivière Empoisonnée",
+      "zone": "vohemar_mines",
+      "type": "main",
+      "enabled": true
+    },
+    {
+      "id": "q4_green_bridge",
+      "title": "Le Pont Vert",
+      "zone": "ranomafana_corridor",
+      "type": "main",
+      "enabled": true
+    },
+    {
+      "id": "q5_debate",
+      "title": "Le Grand Débat",
+      "zone": "sanctuary",
+      "type": "main",
+      "enabled": true
+    }
+  ]
+}

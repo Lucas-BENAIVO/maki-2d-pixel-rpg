@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "locales": ["fr"],
+  "nodes": [
+    {
+      "id": "intro_baobab_maminiaina",
+      "speaker": "Tonton Maminiaina",
+      "lines": [
+        "Tu vois cet arbre, petit ? Il a 300 ans. Ton arrière-arrière-grand-père a joué sous ses branches. Est-ce que tu as le droit de le détruire ?"
+      ],
+      "choices": [
+        {
+          "text": "Non. Mais comment je fais comprendre ça à ceux qui ont faim ?",
+          "effects": { "fihavanana": 5, "unlock": "power_forest_listen" },
+          "next": "intro_baobab_maminiaina_end"
+        }
+      ]
+    },
+    {
+      "id": "intro_baobab_maminiaina_end",
+      "speaker": "Tonton Maminiaina",
+      "lines": [
+        "C'est la bonne question, Ravo. Et c'est pour ça que tu es ici. Pas pour te battre — pour écouter. La forêt parle. Apprends sa langue."
+      ],
+      "choices": []
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "title": "Tany Maitso",
+    "subtitle": "Terre Verte"
+  },
+  "ala": {
+    "min": 0,
+    "max": 100,
+    "initial": 50,
+    "gameOverAt": 0,
+    "sacredAnimalsThreshold": 80,
+    "deltas": {
+      "plantTree": 2,
+      "extinguishFire": 5,
+      "plantVoanAla": 10,
+      "convinceVillager": 3,
+      "fireSpreadIgnored": -5,
+      "miningZoneActive": -8
+    }
+  },
+  "fihavanana": {
+    "min": 0,
+    "max": 100,
+    "initial": 50,
+    "endingAResetThreshold": 80,
+    "tiers": {
+      "waryMax": 30,
+      "cooperateMax": 60,
+      "alliesCombatMax": 80,
+      "collectiveMovementMin": 81
+    }
+  },
+  "ravo": {
+    "agility": 75,
+    "knowledge": 60,
+    "fihavananaStart": 50,
+    "strength": 40
+  },
+  "zone4": {
+    "treesToPlant": 200,
+    "villagerHelpFihavananaMin": 50
+  },
+  "zone3": {
+    "purifyTimeLimitSeconds": 300
+  },
+  "dadaKoto": {
+    "fihavananaLossIfDefeatedInCombat": 15,
+    "alaLossIfIgnored": 20
+  }
+}
