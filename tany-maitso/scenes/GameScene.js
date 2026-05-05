@@ -1,11 +1,14 @@
-import { Scene, manager } from '@tialops/maki'
+import { Scene } from '@tialops/maki'
+import { manager } from '../systems/manager.js'
 import gameSettings from '../data/game-settings.json'
 import zones from '../data/zones.json'
 import dialogues from '../data/dialogues.json'
 import quests from '../data/quests.json'
 
-const STARTING_MAP = 'default_map'
+const STARTING_MAP = 'tany_maitso_map'
 const PLAYER_SPEED = 120
+const MAP_HALF_W = 340
+const MAP_HALF_H = 255
 
 export default class GameScene extends Scene {
     preload() {
@@ -25,8 +28,8 @@ export default class GameScene extends Scene {
         this.currentQuestIndex = 0
         this.currentDialogueNodeId = null
 
-        // Spawn near the center of the visible camera to avoid off-screen confusion.
-        this.lia.sprite.setPosition(400, 300)
+        // Centre de la carte pleine image (680×510), aligné sur les limites du monde.
+        this.lia.sprite.setPosition(MAP_HALF_W, MAP_HALF_H)
         this.lia.sprite.setCollideWorldBounds(true)
 
         this.physics.add.collider(this.lia.sprite, manager.getWallGroup(this, STARTING_MAP))
