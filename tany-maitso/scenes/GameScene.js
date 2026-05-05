@@ -109,6 +109,7 @@ export default class GameScene extends Scene {
         this.currentQuestIndex = 0
         this.currentDialogueNodeId = null
         this.isGameOver = false
+        this.isNarrativeEnding = false
         this.sacredAnimalsSpawned = false
         this.sacredAnimalEntities = []
         this.storyFlags = {
@@ -198,7 +199,7 @@ export default class GameScene extends Scene {
     }
 
     update() {
-        if (this.isGameOver) return
+        if (this.isGameOver || this.isNarrativeEnding) return
 
         if (this.activeDialogue) {
             this.handleDialogueInput()
@@ -433,6 +434,31 @@ export default class GameScene extends Scene {
         this.showMessage('Ala est tombee a 0%. Game Over.')
     }
 
+    triggerNarrativeEnding() {
+        if (this.isNarrativeEnding) return
+        this.isNarrativeEnding = true
+        if (this.lia.sprite.body) {
+            this.lia.sprite.body.setVelocity(0, 0)
+        }
+        this.dialogueBox.setVisible(false)
+        this.activeDialogue = null
+
+        let endingTitle = ''
+        let endingText = ''
+        if (this.fihavanana > 80) {
+            endingTitle = 'Fin A - La Renaissance'
+            endingText = 'La foret renait entierement, le pere est libere, et un programme de reforestation demarre.'
+        } else if (this.fihavanana >= 40) {
+            endingTitle = "Fin B - L'Espoir Fragile"
+            endingText = 'La foret est partiellement sauvee, Viktor est expulse mais reviendra. La lutte continue.'
+        } else {
+            endingTitle = 'Fin C - Le Sacrifice'
+            endingText = 'Le pere est sauve mais la foret est en grande partie perdue. "Chaque arbre plante est une victoire."'
+        }
+
+        this.showMessage(`${endingTitle} | ${endingText}`)
+    }
+
     spawnSacredAnimals() {
         this.sacredAnimalsSpawned = true
         this.sacredAnimalEntities = SACRED_ANIMAL_MARKERS.map((marker) => {
@@ -604,6 +630,10 @@ export default class GameScene extends Scene {
         this.showMessage(summary.join(' '))
         this.dialogueBox.setVisible(false)
         this.activeDialogue = null
+        if (npcId === 'viktor_lauzon') {
+            this.triggerNarrativeEnding()
+            return
+        }
         this.refreshHud()
     }
 
