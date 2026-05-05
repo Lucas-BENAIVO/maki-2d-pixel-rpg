@@ -20,6 +20,11 @@ const LOCKED_RIGHT_BOTTOM_MARGIN_X = 44
 const LOCKED_RIGHT_TOP_SHIFT_X = 80
 const TONTON_PRIMARY_POS = { x: 180, y: 390 } // Secteur 1: village de Masoala
 const TONTON_SECONDARY_POS = { x: 308, y: 340 } // Entree du corridor de Ranomafana (secteur 4)
+const SACRED_ANIMAL_MARKERS = [
+    { x: 510, y: 120, color: 0x9cf4ff, label: 'Lemurien sacre' },
+    { x: 612, y: 92, color: 0xc6ff9c, label: 'Camaleon sacre' },
+    { x: 568, y: 188, color: 0xffdfa3, label: 'Voromahery sacre' }
+]
 const NON_PLAYABLE_AREAS = [
     // Zone noire en bas a droite: hors zone jouable.
     { x: 556, y: 288, w: 124, h: 222 }
@@ -62,6 +67,9 @@ export default class GameScene extends Scene {
         this.fihavanana = gameSettings.fihavanana.initial
         this.currentQuestIndex = 0
         this.currentDialogueNodeId = null
+        this.isGameOver = false
+        this.sacredAnimalsSpawned = false
+        this.sacredAnimalEntities = []
 
         // Centre de la carte pleine image (680×510), aligné sur les limites du monde.
         this.lia.sprite.setPosition(MAP_HALF_W, MAP_HALF_H)
@@ -96,7 +104,12 @@ export default class GameScene extends Scene {
             right: 'D',
             interact: 'E',
             plant: 'P',
-            nextZone: 'N'
+            nextZone: 'N',
+            extinguishFire: 'F',
+            plantVoanAla: 'V',
+            convinceVillager: 'C',
+            ignoreFire: 'I',
+            activateMining: 'M'
         })
 
         this.npc = this.add.circle(TONTON_PRIMARY_POS.x, TONTON_PRIMARY_POS.y, 12, 0xf4c542).setDepth(10)
@@ -122,18 +135,52 @@ export default class GameScene extends Scene {
         }).setScrollFactor(0).setDepth(20)
 
         this.refreshHud()
-        this.showMessage('MVP jouable: ZQSD/Fleches bouger, E parler, P planter (+Ala), N debloquer secteur.')
+        this.showMessage('MVP: ZQSD/Fleches bouger, E parler, P/F/V/C/I/M actions Ala, N debloquer secteur.')
     }
 
     update() {
+        if (this.isGameOver) return
+
         this.movePlayer()
 
         if (Phaser.Input.Keyboard.JustDown(this.keys.interact)) {
             this.tryInteract()
         }
         if (Phaser.Input.Keyboard.JustDown(this.keys.plant)) {
-            this.applyAlaDelta(gameSettings.ala.deltas.plantTree)
-            this.showMessage('Tu plantes un arbre. Ala +2%.')
+            this.applyAlaDeltaWithFeedback(
+                gameSettings.ala.deltas.plantTree,
+                'Tu plantes un arbre. Ala +2%.'
+            )
+        }
+        if (Phaser.Input.Keyboard.JustDown(this.keys.extinguishFire)) {
+            this.applyAlaDeltaWithFeedback(
+                gameSettings.ala.deltas.extinguishFire,
+                'Tu eteins un incendie. Ala +5%.'
+            )
+        }
+        if (Phaser.Input.Keyboard.JustDown(this.keys.plantVoanAla)) {
+            this.applyAlaDeltaWithFeedback(
+                gameSettings.ala.deltas.plantVoanAla,
+                "Tu plantes une Voan'Ala. Ala +10%."
+            )
+        }
+        if (Phaser.Input.Keyboard.JustDown(this.keys.convinceVillager)) {
+            this.applyAlaDeltaWithFeedback(
+                gameSettings.ala.deltas.convinceVillager,
+                'Tu convaincs un villageois. Ala +3%.'
+            )
+        }
+        if (Phaser.Input.Keyboard.JustDown(this.keys.ignoreFire)) {
+            this.applyAlaDeltaWithFeedback(
+                gameSettings.ala.deltas.fireSpreadIgnored,
+                'Un incendie se propage sans intervention. Ala -5%.'
+            )
+        }
+        if (Phaser.Input.Keyboard.JustDown(this.keys.activateMining)) {
+            this.applyAlaDeltaWithFeedback(
+                gameSettings.ala.deltas.miningZoneActive,
+                'Une zone miniere est activee. Ala -8%.'
+            )
         }
         if (Phaser.Input.Keyboard.JustDown(this.keys.nextZone)) {
             this.unlockNextSector()
@@ -284,6 +331,47 @@ export default class GameScene extends Scene {
         const max = gameSettings.ala.max
         this.ala = Phaser.Math.Clamp(this.ala + delta, min, max)
         this.refreshHud()
+        this.evaluateAlaState()
+    }
+
+    applyAlaDeltaWithFeedback(delta, actionText) {
+        this.applyAlaDelta(delta)
+        if (!this.isGameOver) {
+            this.showMessage(actionText)
+        }
+    }
+
+    evaluateAlaState() {
+        if (this.ala <= gameSettings.ala.gameOverAt) {
+            this.triggerGameOver()
+            return
+        }
+        if (!this.sacredAnimalsSpawned && this.ala > gameSettings.ala.sacredAnimalsThreshold) {
+            this.spawnSacredAnimals()
+            this.showMessage('Ala depasse 80%: les animaux sacres apparaissent sur la carte.')
+        }
+    }
+
+    triggerGameOver() {
+        this.isGameOver = true
+        if (this.lia.sprite.body) {
+            this.lia.sprite.body.setVelocity(0, 0)
+        }
+        this.showMessage('Ala est tombee a 0%. Game Over.')
+    }
+
+    spawnSacredAnimals() {
+        this.sacredAnimalsSpawned = true
+        this.sacredAnimalEntities = SACRED_ANIMAL_MARKERS.map((marker) => {
+            const aura = this.add.circle(marker.x, marker.y, 10, marker.color).setDepth(11)
+            const label = this.add.text(marker.x - 34, marker.y + 12, marker.label, {
+                fontSize: '10px',
+                color: '#f5ffe5',
+                backgroundColor: '#00000088',
+                padding: { x: 4, y: 2 }
+            }).setDepth(11)
+            return { aura, label }
+        })
     }
 
     applyFihavananaDelta(delta) {
