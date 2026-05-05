@@ -18,6 +18,8 @@ const PLAYER_HITBOX_WIDTH_RATIO = 0.9
 const PLAYER_HITBOX_HEIGHT_RATIO = 0.45
 const LOCKED_RIGHT_BOTTOM_MARGIN_X = 44
 const LOCKED_RIGHT_TOP_SHIFT_X = 80
+const TONTON_PRIMARY_POS = { x: 180, y: 390 } // Secteur 1: village de Masoala
+const TONTON_SECONDARY_POS = { x: 308, y: 340 } // Entree du corridor de Ranomafana (secteur 4)
 const NON_PLAYABLE_AREAS = [
     // Zone noire en bas a droite: hors zone jouable.
     { x: 556, y: 288, w: 124, h: 222 }
@@ -97,11 +99,12 @@ export default class GameScene extends Scene {
             nextZone: 'N'
         })
 
-        this.npc = this.add.circle(560, 300, 12, 0xf4c542).setDepth(10)
-        this.npcLabel = this.add.text(525, 320, 'Tonton (E)', {
+        this.npc = this.add.circle(TONTON_PRIMARY_POS.x, TONTON_PRIMARY_POS.y, 12, 0xf4c542).setDepth(10)
+        this.npcLabel = this.add.text(0, 0, 'Dadatoa (E)', {
             fontSize: '12px',
             color: '#f6f6f6'
         }).setDepth(10)
+        this.updateNpcLabelPosition()
 
         this.hud = this.add.text(12, 12, '', {
             fontSize: '14px',
@@ -137,6 +140,7 @@ export default class GameScene extends Scene {
         }
         this.clampPlayerInsideMap()
         this.syncZoneFromPlayerPosition()
+        this.updateNpcLabelPosition()
     }
 
     movePlayer() {
@@ -174,7 +178,7 @@ export default class GameScene extends Scene {
             this.npc.y
         )
         if (distance > 52) {
-            this.showMessage('Approche-toi de Tonton Maminiaina pour parler.')
+            this.showMessage('Approche-toi de Dadatoa Maminiaina pour parler.')
             return
         }
 
@@ -204,6 +208,9 @@ export default class GameScene extends Scene {
         this.unlockedSectorIds.add(nextSectorId)
         this.unlockProgressIndex += 1
         this.rebuildSectorLocks()
+        if (nextSectorId === 'zone4_ranomafana') {
+            this.setNpcPosition(TONTON_SECONDARY_POS.x, TONTON_SECONDARY_POS.y)
+        }
 
         const unlockedZone = zones.zones.find((zone) => zone.id === nextSectorId)
         this.showMessage(`Nouveau secteur debloque: ${unlockedZone.title}. Continue a pied.`)
@@ -299,5 +306,14 @@ export default class GameScene extends Scene {
 
     showMessage(text) {
         this.message.setText(text)
+    }
+
+    setNpcPosition(x, y) {
+        this.npc.setPosition(x, y)
+        this.updateNpcLabelPosition()
+    }
+
+    updateNpcLabelPosition() {
+        this.npcLabel.setPosition(this.npc.x - 35, this.npc.y + 20)
     }
 }
