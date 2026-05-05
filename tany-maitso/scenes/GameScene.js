@@ -12,14 +12,20 @@ const MAP_HALF_H = 380
 const MAP_WIDTH = 680
 const MAP_HEIGHT = 510
 const BOTTOM_VISUAL_OFFSET = 28
+const VERTICAL_ZONE_SPLIT_Y = 271
+const RIGHT_ZONE_START_X = 316
+const PLAYER_HITBOX_WIDTH_RATIO = 0.9
+const PLAYER_HITBOX_HEIGHT_RATIO = 0.45
+const LOCKED_RIGHT_BOTTOM_MARGIN_X = 44
+const LOCKED_RIGHT_TOP_SHIFT_X = 80
 
 // Une seule grande carte, divisée en 5 secteurs interconnectés.
 const SECTOR_BOUNDS = [
-    { id: 'zone1_masoala', x: 0, y: 255, w: 300, h: 255 },
-    { id: 'zone2_tavy', x: 380, y: 255, w: 300, h: 255 },
-    { id: 'zone3_vohemar', x: 0, y: 0, w: 300, h: 255 },
-    { id: 'zone4_ranomafana', x: 300, y: 0, w: 80, h: 510 },
-    { id: 'zone5_sanctuary', x: 380, y: 0, w: 300, h: 255 }
+    { id: 'zone1_masoala', x: 0, y: VERTICAL_ZONE_SPLIT_Y, w: 300, h: MAP_HEIGHT - VERTICAL_ZONE_SPLIT_Y },
+    { id: 'zone2_tavy', x: RIGHT_ZONE_START_X, y: VERTICAL_ZONE_SPLIT_Y, w: MAP_WIDTH - RIGHT_ZONE_START_X, h: MAP_HEIGHT - VERTICAL_ZONE_SPLIT_Y },
+    { id: 'zone3_vohemar', x: 0, y: 0, w: 300, h: VERTICAL_ZONE_SPLIT_Y },
+    { id: 'zone4_ranomafana', x: 300, y: 0, w: RIGHT_ZONE_START_X - 300, h: 510 },
+    { id: 'zone5_sanctuary', x: RIGHT_ZONE_START_X, y: 0, w: MAP_WIDTH - RIGHT_ZONE_START_X, h: VERTICAL_ZONE_SPLIT_Y }
 ]
 
 // Ordre de progression praticable sur la carte (sortie possible du secteur 1).
@@ -58,7 +64,11 @@ export default class GameScene extends Scene {
             // Hitbox plus petite et recentrée: le personnage peut descendre
             // visuellement plus bas (jusqu'au bord), sans sortir du monde.
             const body = this.lia.sprite.body
-            body.setSize(body.width * 0.55, body.height * 0.45, true)
+            body.setSize(
+                body.width * PLAYER_HITBOX_WIDTH_RATIO,
+                body.height * PLAYER_HITBOX_HEIGHT_RATIO,
+                true
+            )
         }
 
         // Déplacement libre: on n'applique pas les collisions "murs" de la map.
@@ -217,10 +227,19 @@ export default class GameScene extends Scene {
 
         for (const sector of SECTOR_BOUNDS) {
             if (this.unlockedSectorIds.has(sector.id)) continue
+            let lockX = sector.x
+            let lockW = sector.w
+            if (sector.id === 'zone2_tavy') {
+                lockX = sector.x - LOCKED_RIGHT_BOTTOM_MARGIN_X
+                lockW = sector.w + LOCKED_RIGHT_BOTTOM_MARGIN_X
+            } else if (sector.id === 'zone5_sanctuary') {
+                lockX = sector.x + LOCKED_RIGHT_TOP_SHIFT_X
+                lockW = sector.w - LOCKED_RIGHT_TOP_SHIFT_X
+            }
             const rect = this.add.rectangle(
-                sector.x + sector.w / 2,
+                lockX + lockW / 2,
                 sector.y + sector.h / 2,
-                sector.w,
+                lockW,
                 sector.h,
                 0x000000,
                 0
