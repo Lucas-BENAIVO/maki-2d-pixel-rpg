@@ -24,6 +24,14 @@ const SACRED_ANIMAL_MARKERS = [
     { x: 568, y: 188, color: 0xffdfa3, label: 'Voromahery sacre' }
 ]
 const NPC_INTERACT_DISTANCE = 52
+const NPC_STATE_WARY = 'wary'
+const NPC_STATE_NEUTRAL = 'neutral'
+const NPC_STATE_ALLY = 'ally'
+const NPC_STATE_LABELS = {
+    [NPC_STATE_WARY]: 'Mefiant',
+    [NPC_STATE_NEUTRAL]: 'Neutre',
+    [NPC_STATE_ALLY]: 'Allie'
+}
 const STORY_NPCS = [
     {
         id: 'tonton_maminiaina',
@@ -108,8 +116,12 @@ export default class GameScene extends Scene {
             spiritualApproachUnlocked: false,
             economicApproachUnlocked: false,
             dadaKotoConvinced: false,
-            proofCount: 0
+            proofCount: 0,
+            blessed: false
         }
+        this.npcTrustScores = {}
+        this.npcStates = {}
+        this.activeDialogue = null
 
         // Centre de la carte pleine image (680×510), aligné sur les limites du monde.
         this.lia.sprite.setPosition(MAP_HALF_W, MAP_HALF_H)
@@ -149,7 +161,10 @@ export default class GameScene extends Scene {
             plantVoanAla: 'V',
             convinceVillager: 'C',
             ignoreFire: 'I',
-            activateMining: 'M'
+            activateMining: 'M',
+            choice1: 'ONE',
+            choice2: 'TWO',
+            choice3: 'THREE'
         })
 
         this.buildStoryNpcs()
@@ -168,6 +183,13 @@ export default class GameScene extends Scene {
             padding: { x: 8, y: 6 },
             wordWrap: { width: 776 }
         }).setScrollFactor(0).setDepth(20)
+        this.dialogueBox = this.add.text(12, 208, '', {
+            fontSize: '13px',
+            color: '#f9f9f9',
+            backgroundColor: '#000000dd',
+            padding: { x: 8, y: 6 },
+            wordWrap: { width: 776 }
+        }).setScrollFactor(0).setDepth(25).setVisible(false)
 
         this.refreshHud()
         this.updateStoryNpcVisibility()
@@ -177,6 +199,11 @@ export default class GameScene extends Scene {
 
     update() {
         if (this.isGameOver) return
+
+        if (this.activeDialogue) {
+            this.handleDialogueInput()
+            return
+        }
 
         this.movePlayer()
 
@@ -430,11 +457,14 @@ export default class GameScene extends Scene {
     refreshHud() {
         const zone = zones.zones[this.zoneIndex]
         const quest = quests.quests[this.currentQuestIndex]
+        const nearestNpc = this.getNearestVisibleNpc()
+        const nearestNpcState = nearestNpc ? NPC_STATE_LABELS[this.getNpcState(nearestNpc.id)] : '-'
         this.hud.setText([
             `Zone: ${zone.title}`,
             `Ala: ${this.ala}%`,
             `Fihavanana: ${this.fihavanana}%`,
-            `Quete: ${quest.title}`
+            `Quete: ${quest.title}`,
+            `Etat PNJ proche: ${nearestNpcState}`
         ])
     }
 
@@ -478,61 +508,185 @@ export default class GameScene extends Scene {
     }
 
     interactWithStoryNpc(npcId) {
-        if (npcId === 'noro_randria') {
-            this.interactNoroRandria()
+        this.openDialogueForNpc(npcId)
+    }
+
+    openDialogueForNpc(npcId) {
+        const state = this.getNpcState(npcId)
+        const npcDialogues = dialogues.npcDialogues?.[npcId]
+        const node = npcDialogues?.[state]
+        if (!node) {
+            this.showMessage('Ity olona ity mbola tsy vonona hiresaka.')
             return
+        }
+        this.activeDialogue = { npcId, node }
+        if (this.lia.sprite.body) this.lia.sprite.body.setVelocity(0, 0)
+        this.renderDialogue()
+    }
+
+    renderDialogue() {
+        if (!this.activeDialogue) return
+        const { node } = this.activeDialogue
+        const lines = [
+            `${node.speaker}: ${node.text}`,
+            '',
+            `1) ${node.choices[0].text}`,
+            `2) ${node.choices[1].text}`,
+            `3) ${node.choices[2].text}`,
+            '',
+            'Safidio ny valiny: 1 / 2 / 3'
+        ]
+        this.dialogueBox.setText(lines)
+        this.dialogueBox.setVisible(true)
+    }
+
+    handleDialogueInput() {
+        if (!this.activeDialogue) return
+        if (Phaser.Input.Keyboard.JustDown(this.keys.choice1)) {
+            this.selectDialogueChoice(0)
+            return
+        }
+        if (Phaser.Input.Keyboard.JustDown(this.keys.choice2)) {
+            this.selectDialogueChoice(1)
+            return
+        }
+        if (Phaser.Input.Keyboard.JustDown(this.keys.choice3)) {
+            this.selectDialogueChoice(2)
+        }
+    }
+
+    selectDialogueChoice(choiceIndex) {
+        if (!this.activeDialogue) return
+        const { npcId, node } = this.activeDialogue
+        const choice = node.choices[choiceIndex]
+        if (!choice) return
+
+        let trustDelta = choice.trust ?? 0
+        let fihavananaDelta = choice.fihavanana ?? 0
+        const feedbackParts = []
+
+        if (choice.needsEconomic && !this.storyFlags.economicApproachUnlocked) {
+            trustDelta -= 2
+            fihavananaDelta -= 3
+            feedbackParts.push('Tsy mbola nosokafana ny fomba ara-toekarena ka tsy nino i Dada Koto.')
+        }
+        if (choice.needsSpiritual && !this.storyFlags.spiritualApproachUnlocked) {
+            trustDelta -= 2
+            fihavananaDelta -= 3
+            feedbackParts.push('Tsy mbola nohamafisina ny fomba ara-panahy ka nihena ny fitokisana.')
+        }
+        if (choice.requireProofs && this.storyFlags.proofCount < 3) {
+            trustDelta -= 2
+            fihavananaDelta -= 2
+            feedbackParts.push('Tsy ampy porofo (3 no ilaina) ka mbola misalasala i Viktor.')
+        }
+        if (choice.requireDadaSupport && !this.storyFlags.dadaKotoConvinced) {
+            trustDelta -= 1
+            fihavananaDelta -= 2
+            feedbackParts.push('Tsy mbola miaraka aminao i Dada Koto, ka malemy ny valiny.')
+        }
+
+        if (fihavananaDelta !== 0) {
+            this.applyFihavananaDelta(fihavananaDelta)
+        }
+        this.applyNpcTrustDelta(npcId, trustDelta)
+        this.applyDialogueRewards(choice, npcId, feedbackParts)
+
+        const stateLabel = NPC_STATE_LABELS[this.getNpcState(npcId)]
+        const summary = [
+            `${node.speaker}: safidy voaray.`,
+            `Fihavanana ${fihavananaDelta >= 0 ? '+' : ''}${fihavananaDelta}.`,
+            `Etat ankehitriny: ${stateLabel}.`
+        ]
+        if (feedbackParts.length > 0) {
+            summary.push(feedbackParts.join(' '))
+        }
+        this.showMessage(summary.join(' '))
+        this.dialogueBox.setVisible(false)
+        this.activeDialogue = null
+        this.refreshHud()
+    }
+
+    applyDialogueRewards(choice, npcId, feedbackParts) {
+        if (choice.unlockInfo) {
+            feedbackParts.push(`Info voasokatra: ${choice.unlockInfo}.`)
+        }
+        if (choice.proofGain) {
+            this.storyFlags.proofCount = Math.min(3, this.storyFlags.proofCount + choice.proofGain)
+            feedbackParts.push(`Porofo voaangona: ${this.storyFlags.proofCount}/3.`)
+        }
+        if (choice.joinTeam) {
+            this.storyFlags.noroJoined = true
+            feedbackParts.push('Noro tafiditra ao anaty ekipa.')
+        }
+        if (choice.unlockApproach === 'economic') {
+            this.storyFlags.economicApproachUnlocked = true
+            feedbackParts.push('Fomba ara-toekarena voasokatra.')
+        }
+        if (choice.unlockApproach === 'spiritual') {
+            this.storyFlags.spiritualApproachUnlocked = true
+            feedbackParts.push('Fomba ara-panahy voasokatra.')
+        }
+        if (choice.bless) {
+            this.storyFlags.blessed = true
+            this.applyFihavananaDelta(2)
+            feedbackParts.push('Nahazo tso-drano: Fihavanana +2 fanampiny.')
+        }
+        if (choice.teachCharcoal) {
+            this.storyFlags.dadaKotoConvinced = true
+            this.applyAlaDelta(gameSettings.ala.deltas.convinceVillager)
+            feedbackParts.push('Dada Koto nanaiky hampianatra charbon vert. Ala +3%.')
+        }
+        if (choice.finalSupport) {
+            this.storyFlags.dadaKotoConvinced = true
+            feedbackParts.push('Dada Koto hiaraka aminao amin ny famaranana.')
         }
         if (npcId === 'tonton_maminiaina') {
-            this.interactTontonMaminiaina()
-            return
+            this.storyFlags.spiritualApproachUnlocked = true
         }
-        if (npcId === 'dada_koto') {
-            this.interactDadaKoto()
-            return
-        }
-        if (npcId === 'viktor_lauzon') {
-            this.interactViktorLauzon()
-        }
-    }
-
-    interactNoroRandria() {
-        if (!this.storyFlags.noroJoined) {
-            this.storyFlags.noroJoined = true
+        if (npcId === 'noro_randria' && this.storyFlags.noroJoined) {
             this.storyFlags.economicApproachUnlocked = true
-            this.storyFlags.proofCount = Math.min(3, this.storyFlags.proofCount + 1)
-            this.showMessage('Noro Randria rejoint l equipe. Analyse vegetale + Donnees terrain actives, approche economique debloquee.')
-            return
         }
-        this.showMessage('Noro: "Je continue les analyses et je collecte des preuves contre les exploitants."')
     }
 
-    interactTontonMaminiaina() {
-        this.storyFlags.spiritualApproachUnlocked = true
-        this.applyFihavananaDelta(5)
-        this.showMessage('Tonton Maminiaina partage la memoire ancestrale et te benit. Fihavanana +5, approche spirituelle debloquee.')
+    getNpcState(npcId) {
+        if (!this.npcStates[npcId]) {
+            this.npcStates[npcId] = NPC_STATE_NEUTRAL
+        }
+        return this.npcStates[npcId]
     }
 
-    interactDadaKoto() {
-        if (!this.storyFlags.economicApproachUnlocked && !this.storyFlags.spiritualApproachUnlocked) {
-            this.showMessage('Dada Koto: "Parle-moi avec des arguments concrets ou avec le respect des anciens."')
+    applyNpcTrustDelta(npcId, trustDelta) {
+        const current = this.npcTrustScores[npcId] ?? 0
+        const next = Phaser.Math.Clamp(current + trustDelta, -6, 6)
+        this.npcTrustScores[npcId] = next
+        if (next <= -2) {
+            this.npcStates[npcId] = NPC_STATE_WARY
             return
         }
-        if (!this.storyFlags.dadaKotoConvinced) {
-            this.storyFlags.dadaKotoConvinced = true
-            this.applyAlaDeltaWithFeedback(
-                gameSettings.ala.deltas.convinceVillager,
-                'Dada Koto est convaincu: il enseigne le charbon vert et promet de revenir a la scene finale. Ala +3%.'
+        if (next >= 3) {
+            this.npcStates[npcId] = NPC_STATE_ALLY
+            return
+        }
+        this.npcStates[npcId] = NPC_STATE_NEUTRAL
+    }
+
+    getNearestVisibleNpc() {
+        let nearestNpc = null
+        let nearestDistance = Number.POSITIVE_INFINITY
+        for (const npc of this.storyNpcs) {
+            if (!npc.sprite.visible) continue
+            const distance = Phaser.Math.Distance.Between(
+                this.lia.sprite.x,
+                this.lia.sprite.y,
+                npc.sprite.x,
+                npc.sprite.y
             )
-            return
+            if (distance < nearestDistance) {
+                nearestDistance = distance
+                nearestNpc = npc
+            }
         }
-        this.showMessage('Dada Koto: "Le charbon vert, c est notre sortie durable pour nourrir mes enfants."')
-    }
-
-    interactViktorLauzon() {
-        if (this.storyFlags.proofCount >= 3 && this.storyFlags.dadaKotoConvinced) {
-            this.showMessage('Viktor Lauzon: "Tes preuves sont solides... Ce debat n est pas termine."')
-            return
-        }
-        this.showMessage('Viktor Lauzon: "Reviens avec 3 preuves et des repliques mieux preparees."')
+        return nearestNpc
     }
 }

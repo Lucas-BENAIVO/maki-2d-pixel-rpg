@@ -1,6 +1,124 @@
 {
   "version": 1,
   "locales": ["fr"],
+  "npcDialogues": {
+    "tonton_maminiaina": {
+      "wary": {
+        "speaker": "Tonton Maminiaina",
+        "text": "Mbola manahy aho. Mahay mihaino ve ianao sa handresy lahatra fotsiny?",
+        "choices": [
+          { "text": "Hihaino aloha aho, tonton.", "fihavanana": 4, "trust": 2, "unlockInfo": "tantara_razana" },
+          { "text": "Tantara taloha ihany izany, aleo handeha.", "fihavanana": -4, "trust": -2 },
+          { "text": "Asehoy ahy ny lalana hanampiana ny olona.", "fihavanana": 2, "trust": 1 }
+        ]
+      },
+      "neutral": {
+        "speaker": "Tonton Maminiaina",
+        "text": "Ny fitadidian ny razana no mampitsangana ny ala sy ny olona.",
+        "choices": [
+          { "text": "Tantarao ahy ny tantaran ity faritra ity.", "fihavanana": 3, "trust": 1, "unlockInfo": "tantara_zone" },
+          { "text": "Tsy ilaina izany fa mila vokatra haingana isika.", "fihavanana": -3, "trust": -1 },
+          { "text": "Omeo tso-drano aho alohan ny adihevitra.", "fihavanana": 5, "trust": 2, "bless": true }
+        ]
+      },
+      "ally": {
+        "speaker": "Tonton Maminiaina",
+        "text": "Miaraka aminao aho. Vonona ny tso-drano sy ny fahendrena.",
+        "choices": [
+          { "text": "Misaotra tonton, mila tso-drano aho.", "fihavanana": 6, "trust": 1, "bless": true },
+          { "text": "Asehoy ahy ny tantara miafina isaky ny faritra.", "fihavanana": 3, "trust": 1, "unlockInfo": "tantara_miafina" },
+          { "text": "Hiteny amin i Dada Koto amin ny fomba fanahy aho.", "fihavanana": 2, "trust": 1, "unlockApproach": "spiritual" }
+        ]
+      }
+    },
+    "noro_randria": {
+      "wary": {
+        "speaker": "Noro Randria",
+        "text": "Raha tsy mazava ny tanjonao dia tsy hanome ny fikarohako aho.",
+        "choices": [
+          { "text": "Hampiasa ny porofo hiarovana ny ala aho.", "fihavanana": 4, "trust": 2, "proofGain": 1, "joinTeam": true },
+          { "text": "Aleo afenina ny porofo sao manahirana.", "fihavanana": -5, "trust": -2 },
+          { "text": "Andao hanadihady zavamaniry miaraka.", "fihavanana": 3, "trust": 1, "unlockInfo": "analyse_vegetale" }
+        ]
+      },
+      "neutral": {
+        "speaker": "Noro Randria",
+        "text": "Nahazo santionany vaovao aho. Mila fanapahan-kevitrao izao.",
+        "choices": [
+          { "text": "Angony ny antontan-kevitra hanohitra ny mpanararaotra.", "fihavanana": 5, "trust": 2, "proofGain": 1, "joinTeam": true },
+          { "text": "Aoka aloha fa tsy laharam-pahamehana izany.", "fihavanana": -3, "trust": -1 },
+          { "text": "Hazavao amiko ny toetry ny zavamaniry eto.", "fihavanana": 2, "trust": 1, "unlockInfo": "donnees_terrain" }
+        ]
+      },
+      "ally": {
+        "speaker": "Noro Randria",
+        "text": "Eo anilanao aho. Efa milamina ny fanadihadiana ara-tsiansa.",
+        "choices": [
+          { "text": "Alefaso ny porofo farany ho an ny adihevitra.", "fihavanana": 4, "trust": 1, "proofGain": 1 },
+          { "text": "Andao hanokatra ny fomba ara-toekarena amin i Dada Koto.", "fihavanana": 3, "trust": 1, "unlockApproach": "economic" },
+          { "text": "Tsara izany, tohizo ny fanaraha-maso.", "fihavanana": 2, "trust": 1 }
+        ]
+      }
+    },
+    "dada_koto": {
+      "wary": {
+        "speaker": "Dada Koto",
+        "text": "Aza tsaraina aho. Mivelona amin ity asa ity ny zanako efatra.",
+        "choices": [
+          { "text": "Fantatro ny fahasarotanao, andao hitady vahaolana.", "fihavanana": 3, "trust": 2 },
+          { "text": "Diso ianao ka ajanony avy hatrany ny fandoroana.", "fihavanana": -5, "trust": -2 },
+          { "text": "Henoy ny soso-kevitra momba ny charbon vert.", "fihavanana": 4, "trust": 2, "teachCharcoal": true }
+        ]
+      },
+      "neutral": {
+        "speaker": "Dada Koto",
+        "text": "Raha mitondra porofo sy fanajana ianao dia mety hifampihaino isika.",
+        "choices": [
+          { "text": "Nentinay ny porofo ara-tsiansa sy ara-toekarena.", "fihavanana": 5, "trust": 2, "needsEconomic": true },
+          { "text": "Ny razana milaza fa arovana ny ala, henoy izany.", "fihavanana": 4, "trust": 2, "needsSpiritual": true },
+          { "text": "Tsy manam-potoana aho, manaiky fotsiny.", "fihavanana": -4, "trust": -2 }
+        ]
+      },
+      "ally": {
+        "speaker": "Dada Koto",
+        "text": "Efa hitako ny lalana hafa. Hampianatra charbon vert aho.",
+        "choices": [
+          { "text": "Misaotra, hampianatra ny tanora ve ianao?", "fihavanana": 4, "trust": 1, "teachCharcoal": true },
+          { "text": "Amin ny famaranana dia miara-mijoro amiko ianao.", "fihavanana": 3, "trust": 1, "finalSupport": true },
+          { "text": "Andao aseho amin i Viktor ny vahaolana eto an-toerana.", "fihavanana": 3, "trust": 1 }
+        ]
+      }
+    },
+    "viktor_lauzon": {
+      "wary": {
+        "speaker": "Viktor Lauzon",
+        "text": "Teny foana no entinao. Aiza ny porofo sy paikady?",
+        "choices": [
+          { "text": "Mbola manangona porofo aho, miverina aho.", "fihavanana": 1, "trust": 1 },
+          { "text": "Tsy mila porofo, ampy ny fahatezerako.", "fihavanana": -5, "trust": -2 },
+          { "text": "Hanomana valiny 3 miorina amin ny porofo aho.", "fihavanana": 2, "trust": 1 }
+        ]
+      },
+      "neutral": {
+        "speaker": "Viktor Lauzon",
+        "text": "Raha matotra ny valinteninao dia henoko. Asehoy izay porofo.",
+        "choices": [
+          { "text": "Ireto ny porofo telo manaporofo ny fahasimban ny ala.", "fihavanana": 6, "trust": 2, "requireProofs": true },
+          { "text": "Ajanony fotsiny fa tsy mila miady hevitra.", "fihavanana": -4, "trust": -2 },
+          { "text": "Manana vahaolana ara-tsosialy sy ara-toekarena izahay.", "fihavanana": 4, "trust": 1, "requireDadaSupport": true }
+        ]
+      },
+      "ally": {
+        "speaker": "Viktor Lauzon",
+        "text": "Mahery ny valinteninao. Tsy maintsy hajaina ny tetikasa maharitrareo.",
+        "choices": [
+          { "text": "Arovantsika miaraka ny ala sy ny asa ho an ny vahoaka.", "fihavanana": 5, "trust": 1 },
+          { "text": "Ataovy an-tsoratra ny fifanarahana maitso.", "fihavanana": 4, "trust": 1, "unlockInfo": "fifanarahana_maitso" },
+          { "text": "Efa vonona ny faran ny adihevitra.", "fihavanana": 3, "trust": 1 }
+        ]
+      }
+    }
+  },
   "nodes": [
     {
       "id": "intro_baobab_maminiaina",
