@@ -4,13 +4,13 @@
   "nodes": [
     {
       "id": "intro_baobab_maminiaina",
-      "speaker": "Tonton Maminiaina",
+      "speaker": "Dadatoa Maminiaina",
       "lines": [
-        "Tu vois cet arbre, petit ? Il a 300 ans. Ton arrière-arrière-grand-père a joué sous ses branches. Est-ce que tu as le droit de le détruire ?"
+        "Hitanao io hazo io, anaka? Efa 300 taona izy. Nilalao teo ambanin'ny rantsany ny raiben-draibenao. Manan-jo handrava azy ve ianao?"
       ],
       "choices": [
         {
-          "text": "Non. Mais comment je fais comprendre ça à ceux qui ont faim ?",
+          "text": "Tsia. Fa ahoana no hampahafantarako izany amin'ireo noana?",
           "effects": { "fihavanana": 5, "unlock": "power_forest_listen" },
           "next": "intro_baobab_maminiaina_end"
         }
@@ -18,9 +18,9 @@
     },
     {
       "id": "intro_baobab_maminiaina_end",
-      "speaker": "Tonton Maminiaina",
+      "speaker": "Dadatoa Maminiaina",
       "lines": [
-        "C'est la bonne question, Ravo. Et c'est pour ça que tu es ici. Pas pour te battre — pour écouter. La forêt parle. Apprends sa langue."
+        "Izay no fanontaniana marina, Ravo. Ary izay no antony maha-eto anao. Tsy hiady no nahatongavanao fa hihaino. Miteny ny ala. Ianaro ny fiteniny."
       ],
       "choices": []
     }
