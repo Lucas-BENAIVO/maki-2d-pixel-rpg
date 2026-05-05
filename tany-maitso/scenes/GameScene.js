@@ -18,12 +18,45 @@ const PLAYER_HITBOX_WIDTH_RATIO = 0.9
 const PLAYER_HITBOX_HEIGHT_RATIO = 0.45
 const LOCKED_RIGHT_BOTTOM_MARGIN_X = 44
 const LOCKED_RIGHT_TOP_SHIFT_X = 80
-const TONTON_PRIMARY_POS = { x: 180, y: 390 } // Secteur 1: village de Masoala
-const TONTON_SECONDARY_POS = { x: 308, y: 340 } // Entree du corridor de Ranomafana (secteur 4)
 const SACRED_ANIMAL_MARKERS = [
     { x: 510, y: 120, color: 0x9cf4ff, label: 'Lemurien sacre' },
     { x: 612, y: 92, color: 0xc6ff9c, label: 'Camaleon sacre' },
     { x: 568, y: 188, color: 0xffdfa3, label: 'Voromahery sacre' }
+]
+const NPC_INTERACT_DISTANCE = 52
+const STORY_NPCS = [
+    {
+        id: 'tonton_maminiaina',
+        name: 'Tonton Maminiaina',
+        zoneId: 'zone1_masoala',
+        x: 176,
+        y: 386,
+        tint: 0xfff06a
+    },
+    {
+        id: 'noro_randria',
+        name: 'Noro Randria',
+        zoneId: 'zone1_masoala',
+        x: 242,
+        y: 360,
+        tint: 0xfff06a
+    },
+    {
+        id: 'dada_koto',
+        name: 'Dada Koto',
+        zoneId: 'zone2_tavy',
+        x: 474,
+        y: 390,
+        tint: 0xfff06a
+    },
+    {
+        id: 'viktor_lauzon',
+        name: 'Viktor Lauzon',
+        zoneId: 'zone5_sanctuary',
+        x: 546,
+        y: 146,
+        tint: 0xfff06a
+    }
 ]
 const NON_PLAYABLE_AREAS = [
     // Zone noire en bas a droite: hors zone jouable.
@@ -70,6 +103,13 @@ export default class GameScene extends Scene {
         this.isGameOver = false
         this.sacredAnimalsSpawned = false
         this.sacredAnimalEntities = []
+        this.storyFlags = {
+            noroJoined: false,
+            spiritualApproachUnlocked: false,
+            economicApproachUnlocked: false,
+            dadaKotoConvinced: false,
+            proofCount: 0
+        }
 
         // Centre de la carte pleine image (680×510), aligné sur les limites du monde.
         this.lia.sprite.setPosition(MAP_HALF_W, MAP_HALF_H)
@@ -112,12 +152,7 @@ export default class GameScene extends Scene {
             activateMining: 'M'
         })
 
-        this.npc = this.add.circle(TONTON_PRIMARY_POS.x, TONTON_PRIMARY_POS.y, 12, 0xf4c542).setDepth(10)
-        this.npcLabel = this.add.text(0, 0, 'Dadatoa (E)', {
-            fontSize: '12px',
-            color: '#f6f6f6'
-        }).setDepth(10)
-        this.updateNpcLabelPosition()
+        this.buildStoryNpcs()
 
         this.hud = this.add.text(12, 12, '', {
             fontSize: '14px',
@@ -135,6 +170,8 @@ export default class GameScene extends Scene {
         }).setScrollFactor(0).setDepth(20)
 
         this.refreshHud()
+        this.updateStoryNpcVisibility()
+        this.updateNpcLabelPosition()
         this.showMessage('MVP: ZQSD/Fleches bouger, E parler, P/F/V/C/I/M actions Ala, N debloquer secteur.')
     }
 
@@ -218,18 +255,28 @@ export default class GameScene extends Scene {
     }
 
     tryInteract() {
-        const distance = Phaser.Math.Distance.Between(
-            this.lia.sprite.x,
-            this.lia.sprite.y,
-            this.npc.x,
-            this.npc.y
-        )
-        if (distance > 52) {
-            this.showMessage('Approche-toi de Dadatoa Maminiaina pour parler.')
+        let nearestNpc = null
+        let nearestDistance = Number.POSITIVE_INFINITY
+        for (const npc of this.storyNpcs) {
+            if (!npc.sprite.visible) continue
+            const distance = Phaser.Math.Distance.Between(
+                this.lia.sprite.x,
+                this.lia.sprite.y,
+                npc.sprite.x,
+                npc.sprite.y
+            )
+            if (distance < nearestDistance) {
+                nearestDistance = distance
+                nearestNpc = npc
+            }
+        }
+
+        if (!nearestNpc || nearestDistance > NPC_INTERACT_DISTANCE) {
+            this.showMessage('Approche-toi d un personnage pour parler (E).')
             return
         }
 
-        this.playDialogue('intro_baobab_maminiaina')
+        this.interactWithStoryNpc(nearestNpc.id)
     }
 
     playDialogue(nodeId) {
@@ -255,12 +302,10 @@ export default class GameScene extends Scene {
         this.unlockedSectorIds.add(nextSectorId)
         this.unlockProgressIndex += 1
         this.rebuildSectorLocks()
-        if (nextSectorId === 'zone4_ranomafana') {
-            this.setNpcPosition(TONTON_SECONDARY_POS.x, TONTON_SECONDARY_POS.y)
-        }
 
         const unlockedZone = zones.zones.find((zone) => zone.id === nextSectorId)
         this.showMessage(`Nouveau secteur debloque: ${unlockedZone.title}. Continue a pied.`)
+        this.updateStoryNpcVisibility()
         this.refreshHud()
     }
 
@@ -280,6 +325,7 @@ export default class GameScene extends Scene {
         this.currentQuestIndex = this.zoneIndex
         const zone = zones.zones[this.zoneIndex]
         this.showMessage(`Zone: ${zone.title} | Objectif: ${zone.goal}`)
+        this.updateStoryNpcVisibility()
         this.refreshHud()
     }
 
@@ -396,12 +442,97 @@ export default class GameScene extends Scene {
         this.message.setText(text)
     }
 
-    setNpcPosition(x, y) {
-        this.npc.setPosition(x, y)
-        this.updateNpcLabelPosition()
+    buildStoryNpcs() {
+        this.storyNpcs = STORY_NPCS.map((definition) => {
+            const sprite = this.add.sprite(definition.x, definition.y, 'lia').setDepth(10)
+            sprite.setScale(1)
+            sprite.setTint(definition.tint)
+            sprite.setAlpha(1)
+            if (definition.id === 'noro_randria' || definition.id === 'viktor_lauzon') {
+                sprite.setFlipX(true)
+            }
+            const label = this.add.text(0, 0, `${definition.name} (E)`, {
+                fontSize: '12px',
+                color: '#f6f6f6'
+            })
+                .setDepth(10)
+                .setBackgroundColor('#000000cc')
+                .setPadding(3, 1, 3, 1)
+                .setStroke('#000000', 2)
+            return { ...definition, sprite, label }
+        })
     }
 
     updateNpcLabelPosition() {
-        this.npcLabel.setPosition(this.npc.x - 35, this.npc.y + 20)
+        for (const npc of this.storyNpcs) {
+            npc.label.setPosition(npc.sprite.x - 54, npc.sprite.y + 20)
+        }
+    }
+
+    updateStoryNpcVisibility() {
+        for (const npc of this.storyNpcs) {
+            const visible = this.unlockedSectorIds.has(npc.zoneId)
+            npc.sprite.setVisible(visible)
+            npc.label.setVisible(visible)
+        }
+    }
+
+    interactWithStoryNpc(npcId) {
+        if (npcId === 'noro_randria') {
+            this.interactNoroRandria()
+            return
+        }
+        if (npcId === 'tonton_maminiaina') {
+            this.interactTontonMaminiaina()
+            return
+        }
+        if (npcId === 'dada_koto') {
+            this.interactDadaKoto()
+            return
+        }
+        if (npcId === 'viktor_lauzon') {
+            this.interactViktorLauzon()
+        }
+    }
+
+    interactNoroRandria() {
+        if (!this.storyFlags.noroJoined) {
+            this.storyFlags.noroJoined = true
+            this.storyFlags.economicApproachUnlocked = true
+            this.storyFlags.proofCount = Math.min(3, this.storyFlags.proofCount + 1)
+            this.showMessage('Noro Randria rejoint l equipe. Analyse vegetale + Donnees terrain actives, approche economique debloquee.')
+            return
+        }
+        this.showMessage('Noro: "Je continue les analyses et je collecte des preuves contre les exploitants."')
+    }
+
+    interactTontonMaminiaina() {
+        this.storyFlags.spiritualApproachUnlocked = true
+        this.applyFihavananaDelta(5)
+        this.showMessage('Tonton Maminiaina partage la memoire ancestrale et te benit. Fihavanana +5, approche spirituelle debloquee.')
+    }
+
+    interactDadaKoto() {
+        if (!this.storyFlags.economicApproachUnlocked && !this.storyFlags.spiritualApproachUnlocked) {
+            this.showMessage('Dada Koto: "Parle-moi avec des arguments concrets ou avec le respect des anciens."')
+            return
+        }
+        if (!this.storyFlags.dadaKotoConvinced) {
+            this.storyFlags.dadaKotoConvinced = true
+            this.applyAlaDeltaWithFeedback(
+                gameSettings.ala.deltas.convinceVillager,
+                'Dada Koto est convaincu: il enseigne le charbon vert et promet de revenir a la scene finale. Ala +3%.'
+            )
+            return
+        }
+        this.showMessage('Dada Koto: "Le charbon vert, c est notre sortie durable pour nourrir mes enfants."')
+    }
+
+    interactViktorLauzon() {
+        if (this.storyFlags.proofCount >= 3 && this.storyFlags.dadaKotoConvinced) {
+            this.showMessage('Viktor Lauzon: "Tes preuves sont solides... Ce debat n est pas termine."')
+            return
+        }
+        this.showMessage('Viktor Lauzon: "Reviens avec 3 preuves et des repliques mieux preparees."')
     }
 }
