@@ -18,6 +18,10 @@ const PLAYER_HITBOX_WIDTH_RATIO = 0.9
 const PLAYER_HITBOX_HEIGHT_RATIO = 0.45
 const LOCKED_RIGHT_BOTTOM_MARGIN_X = 44
 const LOCKED_RIGHT_TOP_SHIFT_X = 80
+const NON_PLAYABLE_AREAS = [
+    // Zone noire en bas a droite: hors zone jouable.
+    { x: 556, y: 288, w: 124, h: 222 }
+]
 
 // Une seule grande carte, divisée en 5 secteurs interconnectés.
 const SECTOR_BOUNDS = [
@@ -76,6 +80,9 @@ export default class GameScene extends Scene {
         this.lockedSectorGroup = this.physics.add.staticGroup()
         this.physics.add.collider(this.lia.sprite, this.lockedSectorGroup)
         this.rebuildSectorLocks()
+        this.nonPlayableGroup = this.physics.add.staticGroup()
+        this.buildNonPlayableCollisions()
+        this.physics.add.collider(this.lia.sprite, this.nonPlayableGroup)
 
         this.cursors = this.input.keyboard.createCursorKeys()
         this.keys = this.input.keyboard.addKeys({
@@ -246,6 +253,22 @@ export default class GameScene extends Scene {
             )
             this.physics.add.existing(rect, true)
             this.lockedSectorGroup.add(rect)
+        }
+    }
+
+    buildNonPlayableCollisions() {
+        this.nonPlayableGroup.clear(true, true)
+        for (const area of NON_PLAYABLE_AREAS) {
+            const rect = this.add.rectangle(
+                area.x + area.w / 2,
+                area.y + area.h / 2,
+                area.w,
+                area.h,
+                0x000000,
+                0
+            )
+            this.physics.add.existing(rect, true)
+            this.nonPlayableGroup.add(rect)
         }
     }
 
