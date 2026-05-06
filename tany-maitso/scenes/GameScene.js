@@ -23,6 +23,15 @@ const SACRED_ANIMAL_MARKERS = [
     { x: 612, y: 92, color: 0xc6ff9c, label: 'Camaleon sacre' },
     { x: 568, y: 188, color: 0xffdfa3, label: 'Voromahery sacre' }
 ]
+const FIRE_INTERACT_DISTANCE = 56
+const FIRE_MARKERS = [
+    // Zone 2 (Tavy) = bas droite, mais on évite la zone noire non-jouable (x>=556,y>=288).
+    // On évite aussi la proximité immédiate de Dada Koto (x≈474,y≈390).
+    // Positions dispersées, toutes dans la zone jouable.
+    { id: 'fire_tavy_1', zoneId: 'zone2_tavy', x: 360, y: 330 },
+    { id: 'fire_tavy_2', zoneId: 'zone2_tavy', x: 370, y: 448 },
+    { id: 'fire_tavy_3', zoneId: 'zone2_tavy', x: 500, y: 350 }
+]
 const NPC_INTERACT_DISTANCE = 52
 const NPC_STATE_WARY = 'wary'
 const NPC_STATE_NEUTRAL = 'neutral'
@@ -169,6 +178,7 @@ export default class GameScene extends Scene {
         })
 
         this.buildStoryNpcs()
+        this.buildFireMarkers()
 
         this.hud = this.add.text(12, 12, '', {
             fontSize: '14px',
@@ -194,8 +204,10 @@ export default class GameScene extends Scene {
 
         this.refreshHud()
         this.updateStoryNpcVisibility()
+        this.updateFireVisibility()
         this.updateNpcLabelPosition()
-        this.showMessage('MVP: ZQSD/Fleches bouger, E parler, P/F/V/C/I/M actions Ala, N debloquer secteur.')
+        this.updateFireLabelPosition()
+        this.showMessage('MVP: ZQSD/Fleches bouger, E parler, P/V/C actions Ala, F/I pres d un incendie, N debloquer secteur.')
     }
 
     update() {
@@ -218,10 +230,7 @@ export default class GameScene extends Scene {
             )
         }
         if (Phaser.Input.Keyboard.JustDown(this.keys.extinguishFire)) {
-            this.applyAlaDeltaWithFeedback(
-                gameSettings.ala.deltas.extinguishFire,
-                'Tu eteins un incendie. Ala +5%.'
-            )
+            this.tryResolveFire('extinguish')
         }
         if (Phaser.Input.Keyboard.JustDown(this.keys.plantVoanAla)) {
             this.applyAlaDeltaWithFeedback(
@@ -236,10 +245,7 @@ export default class GameScene extends Scene {
             )
         }
         if (Phaser.Input.Keyboard.JustDown(this.keys.ignoreFire)) {
-            this.applyAlaDeltaWithFeedback(
-                gameSettings.ala.deltas.fireSpreadIgnored,
-                'Un incendie se propage sans intervention. Ala -5%.'
-            )
+            this.tryResolveFire('ignore')
         }
         if (Phaser.Input.Keyboard.JustDown(this.keys.activateMining)) {
             this.applyAlaDeltaWithFeedback(
@@ -253,6 +259,7 @@ export default class GameScene extends Scene {
         this.clampPlayerInsideMap()
         this.syncZoneFromPlayerPosition()
         this.updateNpcLabelPosition()
+        this.updateFireLabelPosition()
     }
 
     movePlayer() {
@@ -334,6 +341,7 @@ export default class GameScene extends Scene {
         const unlockedZone = zones.zones.find((zone) => zone.id === nextSectorId)
         this.showMessage(`Nouveau secteur debloque: ${unlockedZone.title}. Continue a pied.`)
         this.updateStoryNpcVisibility()
+        this.updateFireVisibility()
         this.refreshHud()
     }
 
@@ -354,6 +362,7 @@ export default class GameScene extends Scene {
         const zone = zones.zones[this.zoneIndex]
         this.showMessage(`Zone: ${zone.title} | Objectif: ${zone.goal}`)
         this.updateStoryNpcVisibility()
+        this.updateFireVisibility()
         this.refreshHud()
     }
 
@@ -531,6 +540,90 @@ export default class GameScene extends Scene {
             npc.sprite.setVisible(visible)
             npc.label.setVisible(visible)
         }
+    }
+
+    buildFireMarkers() {
+        this.fireMarkers = FIRE_MARKERS.map((definition) => {
+            const sprite = this.add.circle(definition.x, definition.y, 12, 0xff6b00).setDepth(12)
+            const ember = this.add.circle(definition.x, definition.y - 4, 6, 0xffbc5e).setDepth(13)
+            const label = this.add.text(0, 0, 'Incendie (F/I)', {
+                fontSize: '11px',
+                color: '#fff0d9'
+            })
+                .setDepth(13)
+                .setBackgroundColor('#000000cc')
+                .setPadding(3, 1, 3, 1)
+                .setStroke('#000000', 2)
+            return {
+                ...definition,
+                sprite,
+                ember,
+                label,
+                isActive: true
+            }
+        })
+    }
+
+    updateFireLabelPosition() {
+        for (const fire of this.fireMarkers) {
+            fire.label.setPosition(fire.x - 42, fire.y + 18)
+        }
+    }
+
+    updateFireVisibility() {
+        const currentSectorId = SECTOR_BOUNDS[this.zoneIndex]?.id
+        for (const fire of this.fireMarkers) {
+            const visible =
+                fire.isActive &&
+                this.unlockedSectorIds.has(fire.zoneId) &&
+                currentSectorId === fire.zoneId
+            fire.sprite.setVisible(visible)
+            fire.ember.setVisible(visible)
+            fire.label.setVisible(visible)
+        }
+    }
+
+    getNearestActiveFire() {
+        let nearestFire = null
+        let nearestDistance = Number.POSITIVE_INFINITY
+        for (const fire of this.fireMarkers) {
+            if (!fire.isActive || !fire.sprite.visible) continue
+            const distance = Phaser.Math.Distance.Between(
+                this.lia.sprite.x,
+                this.lia.sprite.y,
+                fire.x,
+                fire.y
+            )
+            if (distance < nearestDistance) {
+                nearestDistance = distance
+                nearestFire = fire
+            }
+        }
+        if (!nearestFire || nearestDistance > FIRE_INTERACT_DISTANCE) {
+            return null
+        }
+        return nearestFire
+    }
+
+    tryResolveFire(action) {
+        const nearestFire = this.getNearestActiveFire()
+        if (!nearestFire) {
+            this.showMessage('Aucun incendie a proximite. Approche-toi d une flamme en zone Tavy.')
+            return
+        }
+        if (action === 'extinguish') {
+            this.applyAlaDeltaWithFeedback(
+                gameSettings.ala.deltas.extinguishFire,
+                'Tu eteins un incendie. Ala +5%.'
+            )
+        } else {
+            this.applyAlaDeltaWithFeedback(
+                gameSettings.ala.deltas.fireSpreadIgnored,
+                'Tu laisses bruler un incendie. Ala -5%.'
+            )
+        }
+        nearestFire.isActive = false
+        this.updateFireVisibility()
     }
 
     interactWithStoryNpc(npcId) {
