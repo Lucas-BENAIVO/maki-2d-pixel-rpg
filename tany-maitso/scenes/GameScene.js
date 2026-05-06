@@ -544,8 +544,29 @@ export default class GameScene extends Scene {
 
     buildFireMarkers() {
         this.fireMarkers = FIRE_MARKERS.map((definition) => {
-            const sprite = this.add.circle(definition.x, definition.y, 12, 0xff6b00).setDepth(12)
-            const ember = this.add.circle(definition.x, definition.y - 4, 6, 0xffbc5e).setDepth(13)
+            const glow = this.add.circle(definition.x, definition.y + 6, 15, 0xff7a00, 0.28).setDepth(11)
+            const sprite = this.add.triangle(
+                definition.x,
+                definition.y + 3,
+                0,
+                14,
+                12,
+                14,
+                6,
+                0,
+                0xff5a00
+            ).setDepth(12)
+            const ember = this.add.triangle(
+                definition.x,
+                definition.y + 5,
+                3,
+                11,
+                9,
+                11,
+                6,
+                2,
+                0xffd27a
+            ).setDepth(13)
             const label = this.add.text(0, 0, 'Incendie (F/I)', {
                 fontSize: '11px',
                 color: '#fff0d9'
@@ -554,8 +575,28 @@ export default class GameScene extends Scene {
                 .setBackgroundColor('#000000cc')
                 .setPadding(3, 1, 3, 1)
                 .setStroke('#000000', 2)
+
+            this.tweens.add({
+                targets: [sprite, ember],
+                scaleY: { from: 0.88, to: 1.12 },
+                scaleX: { from: 0.94, to: 1.06 },
+                duration: 520 + Math.floor(Math.random() * 220),
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            })
+            this.tweens.add({
+                targets: glow,
+                alpha: { from: 0.2, to: 0.38 },
+                duration: 640 + Math.floor(Math.random() * 180),
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            })
+
             return {
                 ...definition,
+                glow,
                 sprite,
                 ember,
                 label,
@@ -577,6 +618,7 @@ export default class GameScene extends Scene {
                 fire.isActive &&
                 this.unlockedSectorIds.has(fire.zoneId) &&
                 currentSectorId === fire.zoneId
+            fire.glow.setVisible(visible)
             fire.sprite.setVisible(visible)
             fire.ember.setVisible(visible)
             fire.label.setVisible(visible)
