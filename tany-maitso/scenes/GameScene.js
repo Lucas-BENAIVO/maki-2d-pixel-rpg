@@ -28,7 +28,7 @@ const FIRE_MARKERS = [
     // Zone 2 (Tavy) = bas droite, mais on évite la zone noire non-jouable (x>=556,y>=288).
     // On évite aussi la proximité immédiate de Dada Koto (x≈474,y≈390).
     // Positions dispersées, toutes dans la zone jouable.
-    { id: 'fire_tavy_1', zoneId: 'zone2_tavy', x: 360, y: 330 },
+    { id: 'fire_tavy_1', zoneId: 'zone2_tavy', x: 360, y: 350 },
     { id: 'fire_tavy_2', zoneId: 'zone2_tavy', x: 370, y: 448 },
     { id: 'fire_tavy_3', zoneId: 'zone2_tavy', x: 500, y: 350 }
 ]
