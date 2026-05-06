@@ -612,12 +612,8 @@ export default class GameScene extends Scene {
     }
 
     updateFireVisibility() {
-        const currentSectorId = SECTOR_BOUNDS[this.zoneIndex]?.id
         for (const fire of this.fireMarkers) {
-            const visible =
-                fire.isActive &&
-                this.unlockedSectorIds.has(fire.zoneId) &&
-                currentSectorId === fire.zoneId
+            const visible = fire.isActive && this.unlockedSectorIds.has(fire.zoneId)
             fire.glow.setVisible(visible)
             fire.sprite.setVisible(visible)
             fire.ember.setVisible(visible)
